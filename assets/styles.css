@@ -1,0 +1,49 @@
+      .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        border: 1px solid #ccc;
+      }
+
+      .calendar-header,
+      .calendar-day {
+        border: 1px solid #ddd;
+        padding: 6px;
+      }
+
+      .calendar-header {
+        font-weight: bold;
+        text-align: center;
+        background: #f8f9fa;
+      }
+
+      .date-number {
+        font-weight: bold;
+        margin-bottom: 4px;
+      }
+
+      .activity {
+        font-size: 0.85em;
+        margin-bottom: 4px;
+        padding: 8px;
+        background: #e9f2ff;
+        border-radius: 3px;
+      }
+
+      .activity.done {
+        background: #d4edda; /* Bootstrap green */
+        border-left: 4px solid #28a745;
+      }
+
+      .activity.missed {
+        background: #f8d7da; /* Bootstrap red/pink */
+        border-left: 4px solid #dc3545;
+      }
+
+      .activity.rest {
+        background: #d4edda75; /* Bootstrap green */
+      }
+
+      hr {
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+      }

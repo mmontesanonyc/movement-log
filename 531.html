@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -16,44 +16,44 @@
 
   <h1 class="text-xl font-bold tracking-tight text-center">5/3/1 <span class="text-primary">Helper</span></h1>
 
-  <!-- 3RM inputs -->
-  <section class="grid grid-cols-3 gap-2">
-    <label class="form-control">
-      <span class="text-xs opacity-70 mb-1 block">Squat 3RM</span>
-      <input id="in-s" type="number" inputmode="decimal" step="2.5" min="0" placeholder="—" class="input input-bordered w-full text-center text-lg font-semibold">
-    </label>
-    <label class="form-control">
-      <span class="text-xs opacity-70 mb-1 block">Bench 3RM</span>
-      <input id="in-b" type="number" inputmode="decimal" step="2.5" min="0" placeholder="—" class="input input-bordered w-full text-center text-lg font-semibold">
-    </label>
-    <label class="form-control">
-      <span class="text-xs opacity-70 mb-1 block">Deadlift 3RM</span>
-      <input id="in-d" type="number" inputmode="decimal" step="2.5" min="0" placeholder="—" class="input input-bordered w-full text-center text-lg font-semibold">
-    </label>
+  <!-- 3RM inputs: tap a row to select the lift -->
+  <section class="card bg-base-100 shadow">
+    <div id="lift-rows" class="card-body p-2 gap-1">
+      <div data-l="s" class="lift-row flex items-center justify-between gap-3 rounded-box border-2 border-transparent px-2 py-1.5 cursor-pointer">
+        <span class="font-semibold">Squat</span>
+        <input id="in-s" type="number" inputmode="decimal" step="2.5" min="0" placeholder="3RM" class="input input-bordered input-sm w-28 text-right text-base font-semibold">
+      </div>
+      <div data-l="b" class="lift-row flex items-center justify-between gap-3 rounded-box border-2 border-transparent px-2 py-1.5 cursor-pointer">
+        <span class="font-semibold">Bench</span>
+        <input id="in-b" type="number" inputmode="decimal" step="2.5" min="0" placeholder="3RM" class="input input-bordered input-sm w-28 text-right text-base font-semibold">
+      </div>
+      <div data-l="d" class="lift-row flex items-center justify-between gap-3 rounded-box border-2 border-transparent px-2 py-1.5 cursor-pointer">
+        <span class="font-semibold">Deadlift</span>
+        <input id="in-d" type="number" inputmode="decimal" step="2.5" min="0" placeholder="3RM" class="input input-bordered input-sm w-28 text-right text-base font-semibold">
+      </div>
+    </div>
   </section>
 
-  <!-- Week + lift selectors -->
+  <!-- Week stepper + lift selector -->
   <section class="flex flex-col gap-2">
-    <div id="weeks" class="join w-full">
-      <button data-w="1" class="btn join-item flex-1">Wk 1</button>
-      <button data-w="2" class="btn join-item flex-1">Wk 2</button>
-      <button data-w="3" class="btn join-item flex-1">Wk 3</button>
-      <button data-w="4" class="btn join-item flex-1">Wk 4</button>
-    </div>
-    <div id="lifts" role="tablist" class="tabs tabs-box w-full">
-      <button data-l="s" role="tab" class="tab flex-1">Squat</button>
-      <button data-l="b" role="tab" class="tab flex-1">Bench</button>
-      <button data-l="d" role="tab" class="tab flex-1">Deadlift</button>
+    <div class="flex items-center justify-between">
+      <button id="prev" class="btn btn-circle btn-ghost" aria-label="Previous week">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="text-center leading-tight">
+        <div id="week-title" class="text-xl font-bold"></div>
+        <div id="week-sub" class="text-xs opacity-60"></div>
+      </div>
+      <button id="next" class="btn btn-circle btn-ghost" aria-label="Next week">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </button>
     </div>
   </section>
 
   <!-- Sets -->
   <section class="card bg-base-100 shadow flex-1 min-h-0">
     <div class="card-body p-3 gap-2 min-h-0">
-      <div class="flex items-baseline justify-between">
-        <h2 id="title" class="font-bold text-lg"></h2>
-        <span id="scheme" class="badge badge-outline"></span>
-      </div>
+      <h2 id="title" class="font-bold text-lg"></h2>
       <div id="sets" class="flex-1 min-h-0 flex flex-col gap-2"></div>
       <p class="text-[11px] opacity-50 text-center">Rounded to nearest 2.5 · + = as many reps as possible</p>
     </div>
@@ -63,22 +63,25 @@
 
 <script>
 const WEEKS = {
-  1: { name: "Week 1 · 5s",     sets: [[65, "5"],  [75, "5"],  [85, "5+"]] },
-  2: { name: "Week 2 · 3s",     sets: [[70, "3"],  [80, "3"],  [90, "3+"]] },
-  3: { name: "Week 3 · 5/3/1",  sets: [[75, "5"],  [85, "3"],  [95, "1+"]] },
-  4: { name: "Week 4 · Deload", sets: [[40, "5"],  [50, "5"],  [60, "5"]] },
+  1: { sub: "5s",     sets: [[65, "5"],  [75, "5"],  [85, "5+"]] },
+  2: { sub: "3s",     sets: [[70, "3"],  [80, "3"],  [90, "3+"]] },
+  3: { sub: "5/3/1",  sets: [[75, "5"],  [85, "3"],  [95, "1+"]] },
+  4: { sub: "Deload", sets: [[40, "5"],  [50, "5"],  [60, "5"]] },
 };
 const LIFTS = { s: "Squat", b: "Bench", d: "Deadlift" };
 const ROUND = 2.5;
 
 const state = { s: "", b: "", d: "", w: 1, l: "s" };
 
-// ---- Hash <-> state ----
-function readHash() {
-  const p = new URLSearchParams(location.hash.replace(/^#/, ""));
+// ---- URL / storage <-> state ----
+const KEYS = ["s", "b", "d", "w", "l"];
+const STORE = "531-state";
+const hasKeys = (p) => KEYS.some((k) => p.has(k));
+
+function applyParams(p) {
   for (const k of ["s", "b", "d"]) {
     const v = parseFloat(p.get(k));
-    state[k] = isFinite(v) && v > 0 ? v : "";
+    if (isFinite(v) && v > 0) state[k] = v;
   }
   const w = parseInt(p.get("w"));
   if (WEEKS[w]) state.w = w;
@@ -86,12 +89,26 @@ function readHash() {
   if (LIFTS[l]) state.l = l;
 }
 
-function writeHash() {
+// Priority: ?query -> legacy #hash -> last saved in localStorage
+function loadState() {
+  const q = new URLSearchParams(location.search);
+  if (hasKeys(q)) return applyParams(q);
+  const h = new URLSearchParams(location.hash.replace(/^#/, ""));
+  if (hasKeys(h)) return applyParams(h);
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) || "null");
+    if (saved) applyParams(new URLSearchParams(saved));
+  } catch (e) {}
+}
+
+function saveState() {
   const p = new URLSearchParams();
   for (const k of ["s", "b", "d"]) if (state[k] !== "") p.set(k, state[k]);
   p.set("w", state.w);
   p.set("l", state.l);
-  history.replaceState(null, "", "#" + p.toString());
+  const qs = p.toString();
+  try { history.replaceState(null, "", location.pathname + "?" + qs); } catch (e) {}
+  try { localStorage.setItem(STORE, qs); } catch (e) {}
 }
 
 // ---- Render ----
@@ -100,21 +117,23 @@ const roundTo = (x) => Math.round(x / ROUND) * ROUND;
 const fmt = (n) => (Number.isInteger(n) ? n : n.toFixed(1));
 
 function render() {
-  // inputs (don't clobber while typing)
   for (const k of ["s", "b", "d"]) {
     const el = $("in-" + k);
     if (document.activeElement !== el) el.value = state[k];
   }
 
-  document.querySelectorAll("#weeks [data-w]").forEach((b) =>
-    b.classList.toggle("btn-primary", +b.dataset.w === state.w));
-  document.querySelectorAll("#lifts [data-l]").forEach((b) =>
-    b.classList.toggle("tab-active", b.dataset.l === state.l));
+  document.querySelectorAll(".lift-row").forEach((r) => {
+    const on = r.dataset.l === state.l;
+    r.classList.toggle("border-primary", on);
+    r.classList.toggle("bg-primary/10", on);
+    r.classList.toggle("border-transparent", !on);
+  });
 
   const week = WEEKS[state.w];
   const tm = state[state.l];
+  $("week-title").textContent = "Week " + state.w;
+  $("week-sub").textContent = week.sub;
   $("title").textContent = LIFTS[state.l];
-  $("scheme").textContent = week.name;
 
   $("sets").innerHTML = week.sets.map(([pct, reps], i) => {
     const weight = tm === "" ? "—" : fmt(roundTo(tm * pct / 100));
@@ -122,7 +141,7 @@ function render() {
       <div class="flex-1 min-h-0 flex items-center justify-between rounded-box bg-base-200 px-4">
         <div class="flex flex-col">
           <span class="text-xs opacity-60">Set ${i + 1}</span>
-          <span class="text-sm font-semibold">${pct}% × ${reps}</span>
+          <span class="text-sm font-semibold">${reps} × ${pct}%</span>
         </div>
         <div class="text-4xl font-extrabold tabular-nums">${weight}</div>
       </div>`;
@@ -134,25 +153,24 @@ for (const k of ["s", "b", "d"]) {
   $("in-" + k).addEventListener("input", (e) => {
     const v = parseFloat(e.target.value);
     state[k] = isFinite(v) && v > 0 ? v : "";
-    writeHash();
+    saveState();
     render();
   });
 }
-$("weeks").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-w]");
-  if (!b) return;
-  state.w = +b.dataset.w;
-  writeHash(); render();
-});
-$("lifts").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-l]");
-  if (!b) return;
-  state.l = b.dataset.l;
-  writeHash(); render();
-});
-window.addEventListener("hashchange", () => { readHash(); render(); });
+const step = (d) => { state.w = ((state.w - 1 + d + 4) % 4) + 1; saveState(); render(); };
+$("prev").addEventListener("click", () => step(-1));
+$("next").addEventListener("click", () => step(1));
+const selectLift = (e) => {
+  const r = e.target.closest("[data-l]");
+  if (!r || r.dataset.l === state.l) return;
+  state.l = r.dataset.l;
+  saveState(); render();
+};
+$("lift-rows").addEventListener("click", selectLift);
+$("lift-rows").addEventListener("focusin", selectLift);
 
-readHash();
+loadState();
+saveState();
 render();
 </script>
 </body>

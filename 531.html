@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>5/3/1 Helper</title>
+<link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  input[type=number] { -moz-appearance: textfield; }
+</style>
+</head>
+<body class="bg-base-200">
+<main class="h-dvh max-w-md mx-auto flex flex-col gap-3 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+
+  <h1 class="text-xl font-bold tracking-tight text-center">5/3/1 <span class="text-primary">Helper</span></h1>
+
+  <!-- 3RM inputs -->
+  <section class="grid grid-cols-3 gap-2">
+    <label class="form-control">
+      <span class="text-xs opacity-70 mb-1 block">Squat 3RM</span>
+      <input id="in-s" type="number" inputmode="decimal" step="2.5" min="0" placeholder="—" class="input input-bordered w-full text-center text-lg font-semibold">
+    </label>
+    <label class="form-control">
+      <span class="text-xs opacity-70 mb-1 block">Bench 3RM</span>
+      <input id="in-b" type="number" inputmode="decimal" step="2.5" min="0" placeholder="—" class="input input-bordered w-full text-center text-lg font-semibold">
+    </label>
+    <label class="form-control">
+      <span class="text-xs opacity-70 mb-1 block">Deadlift 3RM</span>
+      <input id="in-d" type="number" inputmode="decimal" step="2.5" min="0" placeholder="—" class="input input-bordered w-full text-center text-lg font-semibold">
+    </label>
+  </section>
+
+  <!-- Week + lift selectors -->
+  <section class="flex flex-col gap-2">
+    <div id="weeks" class="join w-full">
+      <button data-w="1" class="btn join-item flex-1">Wk 1</button>
+      <button data-w="2" class="btn join-item flex-1">Wk 2</button>
+      <button data-w="3" class="btn join-item flex-1">Wk 3</button>
+      <button data-w="4" class="btn join-item flex-1">Wk 4</button>
+    </div>
+    <div id="lifts" role="tablist" class="tabs tabs-box w-full">
+      <button data-l="s" role="tab" class="tab flex-1">Squat</button>
+      <button data-l="b" role="tab" class="tab flex-1">Bench</button>
+      <button data-l="d" role="tab" class="tab flex-1">Deadlift</button>
+    </div>
+  </section>
+
+  <!-- Sets -->
+  <section class="card bg-base-100 shadow flex-1 min-h-0">
+    <div class="card-body p-3 gap-2 min-h-0">
+      <div class="flex items-baseline justify-between">
+        <h2 id="title" class="font-bold text-lg"></h2>
+        <span id="scheme" class="badge badge-outline"></span>
+      </div>
+      <div id="sets" class="flex-1 min-h-0 flex flex-col gap-2"></div>
+      <p class="text-[11px] opacity-50 text-center">Rounded to nearest 2.5 · + = as many reps as possible</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const WEEKS = {
+  1: { name: "Week 1 · 5s",     sets: [[65, "5"],  [75, "5"],  [85, "5+"]] },
+  2: { name: "Week 2 · 3s",     sets: [[70, "3"],  [80, "3"],  [90, "3+"]] },
+  3: { name: "Week 3 · 5/3/1",  sets: [[75, "5"],  [85, "3"],  [95, "1+"]] },
+  4: { name: "Week 4 · Deload", sets: [[40, "5"],  [50, "5"],  [60, "5"]] },
+};
+const LIFTS = { s: "Squat", b: "Bench", d: "Deadlift" };
+const ROUND = 2.5;
+
+const state = { s: "", b: "", d: "", w: 1, l: "s" };
+
+// ---- Hash <-> state ----
+function readHash() {
+  const p = new URLSearchParams(location.hash.replace(/^#/, ""));
+  for (const k of ["s", "b", "d"]) {
+    const v = parseFloat(p.get(k));
+    state[k] = isFinite(v) && v > 0 ? v : "";
+  }
+  const w = parseInt(p.get("w"));
+  if (WEEKS[w]) state.w = w;
+  const l = p.get("l");
+  if (LIFTS[l]) state.l = l;
+}
+
+function writeHash() {
+  const p = new URLSearchParams();
+  for (const k of ["s", "b", "d"]) if (state[k] !== "") p.set(k, state[k]);
+  p.set("w", state.w);
+  p.set("l", state.l);
+  history.replaceState(null, "", "#" + p.toString());
+}
+
+// ---- Render ----
+const $ = (id) => document.getElementById(id);
+const roundTo = (x) => Math.round(x / ROUND) * ROUND;
+const fmt = (n) => (Number.isInteger(n) ? n : n.toFixed(1));
+
+function render() {
+  // inputs (don't clobber while typing)
+  for (const k of ["s", "b", "d"]) {
+    const el = $("in-" + k);
+    if (document.activeElement !== el) el.value = state[k];
+  }
+
+  document.querySelectorAll("#weeks [data-w]").forEach((b) =>
+    b.classList.toggle("btn-primary", +b.dataset.w === state.w));
+  document.querySelectorAll("#lifts [data-l]").forEach((b) =>
+    b.classList.toggle("tab-active", b.dataset.l === state.l));
+
+  const week = WEEKS[state.w];
+  const tm = state[state.l];
+  $("title").textContent = LIFTS[state.l];
+  $("scheme").textContent = week.name;
+
+  $("sets").innerHTML = week.sets.map(([pct, reps], i) => {
+    const weight = tm === "" ? "—" : fmt(roundTo(tm * pct / 100));
+    return `
+      <div class="flex-1 min-h-0 flex items-center justify-between rounded-box bg-base-200 px-4">
+        <div class="flex flex-col">
+          <span class="text-xs opacity-60">Set ${i + 1}</span>
+          <span class="text-sm font-semibold">${pct}% × ${reps}</span>
+        </div>
+        <div class="text-4xl font-extrabold tabular-nums">${weight}</div>
+      </div>`;
+  }).join("");
+}
+
+// ---- Events ----
+for (const k of ["s", "b", "d"]) {
+  $("in-" + k).addEventListener("input", (e) => {
+    const v = parseFloat(e.target.value);
+    state[k] = isFinite(v) && v > 0 ? v : "";
+    writeHash();
+    render();
+  });
+}
+$("weeks").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-w]");
+  if (!b) return;
+  state.w = +b.dataset.w;
+  writeHash(); render();
+});
+$("lifts").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-l]");
+  if (!b) return;
+  state.l = b.dataset.l;
+  writeHash(); render();
+});
+window.addEventListener("hashchange", () => { readHash(); render(); });
+
+readHash();
+render();
+</script>
+</body>
+</html>

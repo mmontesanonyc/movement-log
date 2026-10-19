@@ -34,7 +34,7 @@
     </div>
   </section>
 
-  <!-- Week stepper + lift selector -->
+  <!-- Week stepper -->
   <section class="flex flex-col gap-2">
     <div class="flex items-center justify-between">
       <button id="prev" class="btn btn-circle btn-ghost" aria-label="Previous week">
@@ -50,11 +50,24 @@
     </div>
   </section>
 
-  <!-- Sets -->
+  <!-- Warmups + working sets -->
   <section class="card bg-base-100 shadow flex-1 min-h-0">
     <div class="card-body p-3 gap-2 min-h-0">
+
       <h2 id="title" class="font-bold text-lg"></h2>
+
+      <!-- Warmups -->
+      <div class="shrink-0">
+        <h3 class="text-sm font-bold opacity-70 mb-2">Warmups</h3>
+        <div id="warmups" class="grid grid-cols-3 gap-2"></div>
+      </div>
+
+      <div class="divider my-0"></div>
+
+      <!-- Working sets -->
+      <h3 class="text-sm font-bold opacity-70">Working sets</h3>
       <div id="sets" class="flex-1 min-h-0 flex flex-col gap-2"></div>
+
       <p class="text-[11px] opacity-50 text-center">Rounded to nearest 2.5 · + = as many reps as possible</p>
     </div>
   </section>
@@ -68,6 +81,13 @@ const WEEKS = {
   3: { sub: "5/3/1",  sets: [[75, "5"],  [85, "3"],  [95, "1+"]] },
   4: { sub: "Deload", sets: [[40, "5"],  [50, "5"],  [60, "5"]] },
 };
+
+const WARMUPS = [
+  [40, "5"],
+  [50, "5"],
+  [60, "3"],
+];
+
 const LIFTS = { s: "Squat", b: "Bench", d: "Deadlift" };
 const ROUND = 2.5;
 
@@ -83,8 +103,10 @@ function applyParams(p) {
     const v = parseFloat(p.get(k));
     if (isFinite(v) && v > 0) state[k] = v;
   }
+
   const w = parseInt(p.get("w"));
   if (WEEKS[w]) state.w = w;
+
   const l = p.get("l");
   if (LIFTS[l]) state.l = l;
 }
@@ -93,8 +115,10 @@ function applyParams(p) {
 function loadState() {
   const q = new URLSearchParams(location.search);
   if (hasKeys(q)) return applyParams(q);
+
   const h = new URLSearchParams(location.hash.replace(/^#/, ""));
   if (hasKeys(h)) return applyParams(h);
+
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) || "null");
     if (saved) applyParams(new URLSearchParams(saved));
@@ -103,18 +127,33 @@ function loadState() {
 
 function saveState() {
   const p = new URLSearchParams();
-  for (const k of ["s", "b", "d"]) if (state[k] !== "") p.set(k, state[k]);
+
+  for (const k of ["s", "b", "d"]) {
+    if (state[k] !== "") p.set(k, state[k]);
+  }
+
   p.set("w", state.w);
   p.set("l", state.l);
+
   const qs = p.toString();
-  try { history.replaceState(null, "", location.pathname + "?" + qs); } catch (e) {}
-  try { localStorage.setItem(STORE, qs); } catch (e) {}
+
+  try {
+    history.replaceState(null, "", location.pathname + "?" + qs);
+  } catch (e) {}
+
+  try {
+    localStorage.setItem(STORE, qs);
+  } catch (e) {}
 }
 
 // ---- Render ----
 const $ = (id) => document.getElementById(id);
 const roundTo = (x) => Math.round(x / ROUND) * ROUND;
-const fmt = (n) => (Number.isInteger(n) ? n : n.toFixed(1));
+const fmt = (n) => Number.isInteger(n) ? n : n.toFixed(1);
+
+function weightFor(tm, pct) {
+  return tm === "" ? "—" : fmt(roundTo(tm * pct / 100));
+}
 
 function render() {
   for (const k of ["s", "b", "d"]) {
@@ -131,12 +170,26 @@ function render() {
 
   const week = WEEKS[state.w];
   const tm = state[state.l];
+
   $("week-title").textContent = "Week " + state.w;
   $("week-sub").textContent = week.sub;
   $("title").textContent = LIFTS[state.l];
 
+  // Warmup sets
+  $("warmups").innerHTML = WARMUPS.map(([pct, reps]) => {
+    const weight = weightFor(tm, pct);
+
+    return `
+      <div class="rounded-box bg-base-200 px-1 py-3 text-center">
+        <div class="text-xs opacity-60">${reps} × ${pct}%</div>
+        <div class="text-2xl font-extrabold tabular-nums mt-1">${weight}</div>
+      </div>`;
+  }).join("");
+
+  // Working sets
   $("sets").innerHTML = week.sets.map(([pct, reps], i) => {
-    const weight = tm === "" ? "—" : fmt(roundTo(tm * pct / 100));
+    const weight = weightFor(tm, pct);
+
     return `
       <div class="flex-1 min-h-0 flex items-center justify-between rounded-box bg-base-200 px-4">
         <div class="flex flex-col">
@@ -157,15 +210,25 @@ for (const k of ["s", "b", "d"]) {
     render();
   });
 }
-const step = (d) => { state.w = ((state.w - 1 + d + 4) % 4) + 1; saveState(); render(); };
+
+const step = (d) => {
+  state.w = ((state.w - 1 + d + 4) % 4) + 1;
+  saveState();
+  render();
+};
+
 $("prev").addEventListener("click", () => step(-1));
 $("next").addEventListener("click", () => step(1));
+
 const selectLift = (e) => {
   const r = e.target.closest("[data-l]");
   if (!r || r.dataset.l === state.l) return;
+
   state.l = r.dataset.l;
-  saveState(); render();
+  saveState();
+  render();
 };
+
 $("lift-rows").addEventListener("click", selectLift);
 $("lift-rows").addEventListener("focusin", selectLift);
 
@@ -175,3 +238,4 @@ render();
 </script>
 </body>
 </html>
+```
